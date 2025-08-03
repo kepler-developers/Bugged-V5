@@ -170,9 +170,9 @@ tempStorage.users.set('user', {
       let codeData = tempStorage.codes.get(email);
       
       // 如果临时存储中没有，尝试从 KV 获取
-      if (!codeData && env.bugdex_kv) {
+      if (!codeData && env.bugdexKV) {
         const codeKey = `email_code:${email}`;
-        codeData = await env.bugdex_kv.get(codeKey, { type: 'json' });
+        codeData = await env.bugdexKV.get(codeKey, { type: 'json' });
       }
       
       if (!codeData || codeData.code !== code) {
@@ -206,9 +206,9 @@ tempStorage.users.set('user', {
       let existingUser = tempStorage.users.get(username);
       
       // 如果临时存储中没有，尝试从 KV 获取
-      if (!existingUser && env.bugdex_kv) {
+      if (!existingUser && env.bugdexKV) {
         const userKey = `user:${username}`;
-        existingUser = await env.bugdex_kv.get(userKey);
+        existingUser = await env.bugdexKV.get(userKey);
       }
       
       if (existingUser) {
@@ -237,9 +237,9 @@ tempStorage.users.set('user', {
       tempStorage.users.set(username, userData);
       
       // 如果 KV 可用，也保存到 KV
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         const userKey = `user:${username}`;
-        await env.bugdex_kv.put(userKey, JSON.stringify(userData));
+        await env.bugdexKV.put(userKey, JSON.stringify(userData));
       }
       
       // 删除已使用的验证码
