@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx serve . -p 3000",
     "start": "npx serve . -p 3000",
-    "api": "node local-api-server.js",
+    "api": "node script.js",
     "dev:full": "concurrently \"npm run api\" \"npm run dev\"",
     "edgeone:dev": "edgeone dev",
     "edgeone:deploy": "edgeone deploy",
