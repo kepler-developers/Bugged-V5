@@ -41,6 +41,7 @@ export async function onRequest({ request, env }) {
       }
     });
   }
+  
 
   try {
     console.log('Exchanging code for token...');
