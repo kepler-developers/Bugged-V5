@@ -1,14 +1,14 @@
-// ä¸´æ—¶å†…å­˜å­˜å‚¨ï¼ˆç”¨äºŽ KV å­˜å‚¨æœªç”³è¯·æ—¶çš„æµ‹è¯•ï¼‰
+// 临时内存存储（用于 KV 存储未申请时的测试）
 /**
  * @function onRequest
- * @description EdgeOne Pages äº‘å‡½æ•°ä¸»å…¥å£ï¼Œå¤„ç†è®¤è¯/ç™»å½•/æ³¨å†Œç›¸å…³APIã€‚
- * @param {Request} request - HTTPè¯·æ±‚å¯¹è±¡
- * @param {Object} env - EdgeOneæ³¨å…¥çš„çŽ¯å¢ƒå˜é‡ï¼ˆKVã€COSç­‰ï¼‰
+ * @description EdgeOne Pages 云函数主入口，处理认证/登录/注册相关API。
+ * @param {Request} request - HTTP请求对象
+ * @param {Object} env - EdgeOne注入的环境变量（KV、COS等）
  */
 export async function onRequest({ request, env }) {
   const { pathname } = new URL(request.url);
   
-  // å¤„ç† CORS é¢„æ£€è¯·æ±‚
+  // 处理 CORS 预检请求
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
@@ -25,32 +25,32 @@ const tempStorage = {
   codes: new Map()
 };
 
-// æ·»åŠ æµ‹è¯•ç”¨æˆ·æ•°æ®
+// 添加测试用户数据
 tempStorage.users.set('admin', {
   username: 'admin',
   email: 'admin@test.com',
   password: 'admin123',
-  bio: 'ç®¡ç†å‘˜è´¦å·'
+  bio: '管理员账号'
 });
 
 tempStorage.users.set('test', {
   username: 'test',
   email: 'test@test.com',
   password: 'test123',
-  bio: 'æµ‹è¯•è´¦å·'
+  bio: '测试账号'
 });
 
 tempStorage.users.set('user', {
   username: 'user',
   email: 'user@test.com',
   password: 'user123',
-  bio: 'æ™®é€šç”¨æˆ·è´¦å·'
+  bio: '普通用户账号'
 });
 
   
-  // é‚®ä»¶å‘é€å‡½æ•°
+  // 邮件发送函数
   async function sendEmail(to, subject, content) {
-    // ä¼˜å…ˆä½¿ç”¨ SendGrid
+    // 优先使用 SendGrid
     if (env.SENDGRID_API_KEY && env.SENDGRID_FROM_EMAIL) {
       try {
         const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -75,7 +75,7 @@ tempStorage.users.set('user', {
       }
     }
     
-    // å¤‡ç”¨æ–¹æ¡ˆï¼šResend
+    // 备用方案：Resend
     if (env.RESEND_API_KEY && env.RESEND_FROM_EMAIL) {
       try {
         const response = await fetch('https://api.resend.com/emails', {
@@ -107,17 +107,17 @@ tempStorage.users.set('user', {
     try {
       const { username, password } = await request.json();
       
-      // ä¼˜å…ˆä»Žä¸´æ—¶å­˜å‚¨èŽ·å–ç”¨æˆ·ä¿¡æ¯ï¼ˆæµ‹è¯•è´¦å·ï¼‰
+      // 优先从临时存储获取用户信息（测试账号）
       let user = tempStorage.users.get(username);
       
-      // å¦‚æžœä¸´æ—¶å­˜å‚¨ä¸­æ²¡æœ‰ï¼Œå°è¯•ä»Ž KV èŽ·å–
+      // 如果临时存储中没有，尝试从 KV 获取
       if (!user && env.bugdex_kv) {
         const userKey = `user:${username}`;
         user = await env.bugdex_kv.get(userKey, { type: 'json' });
       }
       
       if (user && user.password === password) {
-        // æ”¹è¿›JWT tokenç”Ÿæˆï¼ˆç®€åŒ–ç‰ˆï¼Œç”Ÿäº§çŽ¯å¢ƒåº”ä½¿ç”¨çœŸæ­£çš„JWTåº“ï¼‰
+        // 改进JWT token生成（简化版，生产环境应使用真正的JWT库）
         const payload = { 
           username, 
           exp: Date.now() + 86400000,
@@ -140,7 +140,7 @@ tempStorage.users.set('user', {
       
       return new Response(JSON.stringify({
         success: false,
-        message: 'ç”¨æˆ·åæˆ–å¯†ç é”™è¯¯'
+        message: '用户名或密码错误'
       }), {
         status: 401,
         headers: { 
@@ -151,7 +151,7 @@ tempStorage.users.set('user', {
     } catch (error) {
       return new Response(JSON.stringify({
         success: false,
-        message: 'è¯·æ±‚æ ¼å¼é”™è¯¯'
+        message: '请求格式错误'
       }), {
         status: 400,
         headers: { 
@@ -166,10 +166,10 @@ tempStorage.users.set('user', {
     try {
       const { username, email, password, code } = await request.json();
       
-      // éªŒè¯é‚®ç®±éªŒè¯ç 
+      // 验证邮箱验证码
       let codeData = tempStorage.codes.get(email);
       
-      // å¦‚æžœä¸´æ—¶å­˜å‚¨ä¸­æ²¡æœ‰ï¼Œå°è¯•ä»Ž KV èŽ·å–
+      // 如果临时存储中没有，尝试从 KV 获取
       if (!codeData && env.bugdex_kv) {
         const codeKey = `email_code:${email}`;
         codeData = await env.bugdex_kv.get(codeKey, { type: 'json' });
@@ -178,7 +178,7 @@ tempStorage.users.set('user', {
       if (!codeData || codeData.code !== code) {
         return new Response(JSON.stringify({
           success: false,
-          message: 'éªŒè¯ç é”™è¯¯æˆ–å·²è¿‡æœŸ'
+          message: '验证码错误或已过期'
         }), {
           status: 400,
           headers: { 
@@ -188,11 +188,11 @@ tempStorage.users.set('user', {
         });
       }
       
-      // æ£€æŸ¥éªŒè¯ç æ˜¯å¦è¿‡æœŸï¼ˆ5åˆ†é’Ÿï¼‰
+      // 检查验证码是否过期（5分钟）
       if (Date.now() > codeData.expires_at) {
         return new Response(JSON.stringify({
           success: false,
-          message: 'éªŒè¯ç å·²è¿‡æœŸ'
+          message: '验证码已过期'
         }), {
           status: 400,
           headers: { 
@@ -202,10 +202,10 @@ tempStorage.users.set('user', {
         });
       }
       
-      // æ£€æŸ¥ç”¨æˆ·æ˜¯å¦å·²å­˜åœ¨
+      // 检查用户是否已存在
       let existingUser = tempStorage.users.get(username);
       
-      // å¦‚æžœä¸´æ—¶å­˜å‚¨ä¸­æ²¡æœ‰ï¼Œå°è¯•ä»Ž KV èŽ·å–
+      // 如果临时存储中没有，尝试从 KV 获取
       if (!existingUser && env.bugdex_kv) {
         const userKey = `user:${username}`;
         existingUser = await env.bugdex_kv.get(userKey);
@@ -214,7 +214,7 @@ tempStorage.users.set('user', {
       if (existingUser) {
         return new Response(JSON.stringify({
           success: false,
-          message: 'ç”¨æˆ·åå·²å­˜åœ¨'
+          message: '用户名已存在'
         }), {
           status: 400,
           headers: { 
@@ -224,25 +224,25 @@ tempStorage.users.set('user', {
         });
       }
       
-      // ä¿å­˜ç”¨æˆ·ä¿¡æ¯
+      // 保存用户信息
       const userData = {
         username,
         email,
         password,
-        bio: 'è¿™æ˜¯ä½ çš„ä¸ªäººç®€ä»‹ï¼Œå¯ä»¥åœ¨"ç”¨æˆ·ä¸­å¿ƒ"ç¼–è¾‘ã€‚',
+        bio: '这是你的个人简介，可以在"用户中心"编辑。',
         created_at: new Date().toISOString()
       };
       
-      // ä¼˜å…ˆä¿å­˜åˆ°ä¸´æ—¶å­˜å‚¨
+      // 优先保存到临时存储
       tempStorage.users.set(username, userData);
       
-      // å¦‚æžœ KV å¯ç”¨ï¼Œä¹Ÿä¿å­˜åˆ° KV
+      // 如果 KV 可用，也保存到 KV
       if (env.bugdex_kv) {
         const userKey = `user:${username}`;
         await env.bugdex_kv.put(userKey, JSON.stringify(userData));
       }
       
-      // åˆ é™¤å·²ä½¿ç”¨çš„éªŒè¯ç 
+      // 删除已使用的验证码
       tempStorage.codes.delete(email);
       if (env.bugdex_kv) {
         const codeKey = `email_code:${email}`;
@@ -251,7 +251,7 @@ tempStorage.users.set('user', {
       
       return new Response(JSON.stringify({
         success: true,
-        message: 'æ³¨å†ŒæˆåŠŸ'
+        message: '注册成功'
       }), {
         headers: { 
           'Content-Type': 'application/json',
@@ -261,7 +261,7 @@ tempStorage.users.set('user', {
     } catch (error) {
       return new Response(JSON.stringify({
         success: false,
-        message: 'æ³¨å†Œå¤±è´¥'
+        message: '注册失败'
       }), {
         status: 500,
         headers: { 
@@ -276,45 +276,45 @@ tempStorage.users.set('user', {
     try {
       const { email } = await request.json();
       
-      // ç”ŸæˆéªŒè¯ç 
+      // 生成验证码
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // ä¿å­˜éªŒè¯ç åˆ°ä¸´æ—¶å­˜å‚¨
+      // 保存验证码到临时存储
       const codeData = {
         code,
         created_at: Date.now(),
-        expires_at: Date.now() + 300000 // 5åˆ†é’Ÿè¿‡æœŸ
+        expires_at: Date.now() + 300000 // 5分钟过期
       };
       
       tempStorage.codes.set(email, codeData);
       
-      // å¦‚æžœ KV å¯ç”¨ï¼Œä¹Ÿä¿å­˜åˆ° KV
+      // 如果 KV 可用，也保存到 KV
       if (env.bugdex_kv) {
         await env.bugdex_kv.put(`email_code:${email}`, JSON.stringify(codeData));
       }
       
-      // å‘é€é‚®ä»¶
+      // 发送邮件
       const emailContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">BugDex éªŒè¯ç </h2>
-          <p>æ‚¨å¥½ï¼</p>
-          <p>æ‚¨çš„éªŒè¯ç æ˜¯ï¼š</p>
+          <h2 style="color: #333;">BugDex 验证码</h2>
+          <p>您好！</p>
+          <p>您的验证码是：</p>
           <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; color: #333; margin: 20px 0;">
             ${code}
           </div>
-          <p>éªŒè¯ç æœ‰æ•ˆæœŸä¸º 5 åˆ†é’Ÿï¼Œè¯·å°½å¿«ä½¿ç”¨ã€‚</p>
-          <p>å¦‚æžœè¿™ä¸æ˜¯æ‚¨çš„æ“ä½œï¼Œè¯·å¿½ç•¥æ­¤é‚®ä»¶ã€‚</p>
+          <p>验证码有效期为 5 分钟，请尽快使用。</p>
+          <p>如果这不是您的操作，请忽略此邮件。</p>
           <hr style="margin: 30px 0;">
-          <p style="color: #666; font-size: 12px;">æ­¤é‚®ä»¶ç”± BugDex è®ºå›ç³»ç»Ÿè‡ªåŠ¨å‘é€</p>
+          <p style="color: #666; font-size: 12px;">此邮件由 BugDex 论坛系统自动发送</p>
         </div>
       `;
       
-      const emailResult = await sendEmail(email, 'BugDex éªŒè¯ç ', emailContent);
+      const emailResult = await sendEmail(email, 'BugDex 验证码', emailContent);
       
       if (emailResult.success) {
         return new Response(JSON.stringify({
           success: true,
-          message: 'éªŒè¯ç å·²å‘é€åˆ°æ‚¨çš„é‚®ç®±'
+          message: '验证码已发送到您的邮箱'
         }), {
           headers: { 
             'Content-Type': 'application/json',
@@ -322,12 +322,12 @@ tempStorage.users.set('user', {
           }
         });
       } else {
-        // å¦‚æžœé‚®ä»¶å‘é€å¤±è´¥ï¼Œè¿”å›žæ¨¡æ‹ŸæˆåŠŸï¼ˆå¼€å‘é˜¶æ®µï¼‰
+        // 如果邮件发送失败，返回模拟成功（开发阶段）
         return new Response(JSON.stringify({
           success: true,
-          message: 'éªŒè¯ç å·²å‘é€ï¼ˆæ¨¡æ‹Ÿï¼‰',
-          debug: 'é‚®ä»¶æœåŠ¡æœªé…ç½®ï¼Œä½¿ç”¨æ¨¡æ‹Ÿå‘é€',
-          code: code // ä¸´æ—¶æ˜¾ç¤ºéªŒè¯ç ç”¨äºŽæµ‹è¯•
+          message: '验证码已发送（模拟）',
+          debug: '邮件服务未配置，使用模拟发送',
+          code: code // 临时显示验证码用于测试
         }), {
           headers: { 
             'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ tempStorage.users.set('user', {
     } catch (error) {
       return new Response(JSON.stringify({
         success: false,
-        message: 'å‘é€éªŒè¯ç å¤±è´¥'
+        message: '发送验证码失败'
       }), {
         status: 500,
         headers: { 
@@ -351,7 +351,7 @@ tempStorage.users.set('user', {
   
   return new Response(JSON.stringify({
     success: false,
-    message: 'æŽ¥å£ä¸å­˜åœ¨'
+    message: '接口不存在'
   }), {
     status: 404,
     headers: { 
