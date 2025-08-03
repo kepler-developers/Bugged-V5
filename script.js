@@ -1154,6 +1154,10 @@ const logoutBtn = document.getElementById('logoutBtn');
 // Bootstrap Modal 实例
 let authModalInstance = null;
 
+function loginWithGitHub() {
+  window.location.replace('/api/auth/github/login');
+}
+
 // ========== GitHub登录回调处理 ==========
 function handleGitHubCallback() {
   const urlParams = new URLSearchParams(window.location.search);
