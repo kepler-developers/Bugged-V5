@@ -198,13 +198,13 @@ npm run edgeone:deploy
 
 ```javascript
 // 写入数据
-await env.bugdex_kv.put('key', JSON.stringify(data));
+await env.bugdexKV.put('key', JSON.stringify(data));
 
 // 读取数据
-const data = await env.bugdex_kv.get('key', { type: 'json' });
+const data = await env.bugdexKV.get('key', { type: 'json' });
 
 // 列表查询
-const result = await env.bugdex_kv.list({ prefix: 'prefix:' });
+const result = await env.bugdexKV.list({ prefix: 'prefix:' });
 ```
 
 ## 许可证

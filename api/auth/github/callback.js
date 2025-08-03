@@ -106,9 +106,9 @@ export async function onRequest({ request, env }) {
     const username = `gh_${githubUser.login}`;
     let user = null;
     
-    if (env.bugdex_kv) {
+    if (env.bugdexKV) {
       const userKey = `user:${username}`;
-      user = await env.bugdex_kv.get(userKey, { type: 'json' });
+      user = await env.bugdexKV.get(userKey, { type: 'json' });
     }
     
     if (!user) {
@@ -127,9 +127,9 @@ export async function onRequest({ request, env }) {
     }
     
     // 保存用户信息到KV
-    if (env.bugdex_kv) {
+    if (env.bugdexKV) {
       const userKey = `user:${username}`;
-      await env.bugdex_kv.put(userKey, JSON.stringify(user));
+      await env.bugdexKV.put(userKey, JSON.stringify(user));
     }
 
     // 4. Create a token compatible with existing system

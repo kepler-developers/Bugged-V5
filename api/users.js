@@ -41,9 +41,9 @@ export async function onRequest({ request, env }) {
       
       // 从KV获取用户信息
       let user = null;
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         const userKey = `user:${username}`;
-        user = await env.bugdex_kv.get(userKey, { type: 'json' });
+        user = await env.bugdexKV.get(userKey, { type: 'json' });
       }
       
       // 如果KV中没有，检查预设测试账号
@@ -82,12 +82,12 @@ export async function onRequest({ request, env }) {
       
       // 获取用户的帖子 - 从KV获取
       let posts = [];
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         let cursor;
         do {
-          const result = await env.bugdex_kv.list({ prefix: 'post:', cursor });
+          const result = await env.bugdexKV.list({ prefix: 'post:', cursor });
           for (const key of result.keys) {
-            const post = await env.bugdex_kv.get(key.key, { type: 'json' });
+            const post = await env.bugdexKV.get(key.key, { type: 'json' });
             if (post && post.username === username) {
               posts.push(post);
             }
@@ -150,9 +150,9 @@ export async function onRequest({ request, env }) {
       
       // 更新用户信息
       let user = null;
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         const userKey = `user:${userData.username}`;
-        user = await env.bugdex_kv.get(userKey, { type: 'json' });
+        user = await env.bugdexKV.get(userKey, { type: 'json' });
       }
       
       if (!user) {
@@ -173,9 +173,9 @@ export async function onRequest({ request, env }) {
       user.bio = bio;
       
       // 保存到KV
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         const userKey = `user:${userData.username}`;
-        await env.bugdex_kv.put(userKey, JSON.stringify(user));
+        await env.bugdexKV.put(userKey, JSON.stringify(user));
       }
       
       return new Response(JSON.stringify({
@@ -208,12 +208,12 @@ export async function onRequest({ request, env }) {
       
       // 统计每个用户的发帖数
       let posts = [];
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         let cursor;
         do {
-          const result = await env.bugdex_kv.list({ prefix: 'post:', cursor });
+          const result = await env.bugdexKV.list({ prefix: 'post:', cursor });
           for (const key of result.keys) {
-            const post = await env.bugdex_kv.get(key.key, { type: 'json' });
+            const post = await env.bugdexKV.get(key.key, { type: 'json' });
             if (post) {
               posts.push(post);
             }
@@ -258,12 +258,12 @@ export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     const keyword = url.searchParams.get('keyword') || '';
     let users = [];
-    if (env.bugdex_kv) {
+    if (env.bugdexKV) {
       let cursor;
       do {
-        const result = await env.bugdex_kv.list({ prefix: 'user:', cursor });
+        const result = await env.bugdexKV.list({ prefix: 'user:', cursor });
         for (const key of result.keys) {
-          const user = await env.bugdex_kv.get(key.key, { type: 'json' });
+          const user = await env.bugdexKV.get(key.key, { type: 'json' });
           if (user) users.push(user);
         }
         cursor = result.cursor;

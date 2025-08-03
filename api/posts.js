@@ -28,12 +28,12 @@ export async function onRequest({ request, env }) {
       
       // 从KV获取所有帖子数据
       let posts = [];
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         let cursor;
         do {
-          const result = await env.bugdex_kv.list({ prefix: 'post:', cursor });
+          const result = await env.bugdexKV.list({ prefix: 'post:', cursor });
           for (const key of result.keys) {
-            const post = await env.bugdex_kv.get(key.key, { type: 'json' });
+            const post = await env.bugdexKV.get(key.key, { type: 'json' });
             if (post) posts.push(post);
           }
           cursor = result.cursor;
@@ -189,8 +189,8 @@ export async function onRequest({ request, env }) {
       };
       
       // 保存到KV
-      if (env.bugdex_kv) {
-        await env.bugdex_kv.put(`post:${postId}`, JSON.stringify(post));
+      if (env.bugdexKV) {
+        await env.bugdexKV.put(`post:${postId}`, JSON.stringify(post));
       }
       
       return new Response(JSON.stringify(post), {
@@ -238,7 +238,7 @@ export async function onRequest({ request, env }) {
       
       // 检查是否已经点赞
       const likeKey = `${postId}:${userData.username}`;
-      const existingLike = await env.bugdex_kv.get(`like:${likeKey}`, { type: 'json' });
+      const existingLike = await env.bugdexKV.get(`like:${likeKey}`, { type: 'json' });
       
       if (existingLike) {
         return new Response(JSON.stringify({
@@ -260,17 +260,17 @@ export async function onRequest({ request, env }) {
         created_at: new Date().toISOString()
       };
       
-      if (env.bugdex_kv) {
-        await env.bugdex_kv.put(`like:${likeKey}`, JSON.stringify(likeData));
+      if (env.bugdexKV) {
+        await env.bugdexKV.put(`like:${likeKey}`, JSON.stringify(likeData));
       }
       
       // 更新帖子点赞数
-      let post = await env.bugdex_kv.get(`post:${postId}`, { type: 'json' });
+      let post = await env.bugdexKV.get(`post:${postId}`, { type: 'json' });
       
       if (post) {
         post.likes_count = (post.likes_count || 0) + 1;
-        if (env.bugdex_kv) {
-          await env.bugdex_kv.put(`post:${postId}`, JSON.stringify(post));
+        if (env.bugdexKV) {
+          await env.bugdexKV.put(`post:${postId}`, JSON.stringify(post));
         }
       }
       
@@ -332,8 +332,8 @@ export async function onRequest({ request, env }) {
       };
       
       // 保存到KV
-      if (env.bugdex_kv) {
-        await env.bugdex_kv.put(`comment:${commentId}`, JSON.stringify(comment));
+      if (env.bugdexKV) {
+        await env.bugdexKV.put(`comment:${commentId}`, JSON.stringify(comment));
       }
       
       return new Response(JSON.stringify(comment), {
@@ -364,12 +364,12 @@ export async function onRequest({ request, env }) {
       const page = Number(url.searchParams.get('page')) || 1;
       const size = Number(url.searchParams.get('size')) || 10;
       let comments = [];
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         let cursor;
         do {
-          const result = await env.bugdex_kv.list({ prefix: 'comment:', cursor });
+          const result = await env.bugdexKV.list({ prefix: 'comment:', cursor });
           for (const key of result.keys) {
-            const comment = await env.bugdex_kv.get(key.key, { type: 'json' });
+            const comment = await env.bugdexKV.get(key.key, { type: 'json' });
             if (comment && comment.post_id === postId) {
               comments.push(comment);
             }
@@ -402,12 +402,12 @@ export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     const keyword = url.searchParams.get('keyword') || '';
     let posts = [];
-    if (env.bugdex_kv) {
+    if (env.bugdexKV) {
       let cursor;
       do {
-        const result = await env.bugdex_kv.list({ prefix: 'post:', cursor });
+        const result = await env.bugdexKV.list({ prefix: 'post:', cursor });
         for (const key of result.keys) {
-          const post = await env.bugdex_kv.get(key.key, { type: 'json' });
+          const post = await env.bugdexKV.get(key.key, { type: 'json' });
           if (post) posts.push(post);
         }
         cursor = result.cursor;
@@ -449,7 +449,7 @@ export async function onRequest({ request, env }) {
       const userData = JSON.parse(atob(token));
       
       // 获取帖子信息
-      let post = await env.bugdex_kv.get(`post:${postId}`, { type: 'json' });
+      let post = await env.bugdexKV.get(`post:${postId}`, { type: 'json' });
       
       if (!post) {
         return new Response(JSON.stringify({
@@ -479,18 +479,18 @@ export async function onRequest({ request, env }) {
       }
       
       // 删除帖子
-      if (env.bugdex_kv) {
-        await env.bugdex_kv.delete(`post:${postId}`);
+      if (env.bugdexKV) {
+        await env.bugdexKV.delete(`post:${postId}`);
       }
       
       // 删除相关的评论
       let comments = [];
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         let cursor;
         do {
-          const result = await env.bugdex_kv.list({ prefix: 'comment:', cursor });
+          const result = await env.bugdexKV.list({ prefix: 'comment:', cursor });
           for (const key of result.keys) {
-            const comment = await env.bugdex_kv.get(key.key, { type: 'json' });
+            const comment = await env.bugdexKV.get(key.key, { type: 'json' });
             if (comment && comment.post_id === postId) {
               comments.push(comment);
             }
@@ -501,19 +501,19 @@ export async function onRequest({ request, env }) {
       
       // 删除评论
       for (const comment of comments) {
-        if (env.bugdex_kv) {
-          await env.bugdex_kv.delete(`comment:${comment.id}`);
+        if (env.bugdexKV) {
+          await env.bugdexKV.delete(`comment:${comment.id}`);
         }
       }
       
       // 删除相关的点赞记录
       let likes = [];
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         let cursor;
         do {
-          const result = await env.bugdex_kv.list({ prefix: 'like:', cursor });
+          const result = await env.bugdexKV.list({ prefix: 'like:', cursor });
           for (const key of result.keys) {
-            const like = await env.bugdex_kv.get(key.key, { type: 'json' });
+            const like = await env.bugdexKV.get(key.key, { type: 'json' });
             if (like && like.post_id === postId) {
               likes.push(like);
             }
@@ -525,8 +525,8 @@ export async function onRequest({ request, env }) {
       // 删除点赞记录
       for (const like of likes) {
         const likeKey = `${postId}:${like.username}`;
-        if (env.bugdex_kv) {
-          await env.bugdex_kv.delete(`like:${likeKey}`);
+        if (env.bugdexKV) {
+          await env.bugdexKV.delete(`like:${likeKey}`);
         }
       }
       

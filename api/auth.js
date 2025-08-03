@@ -111,9 +111,9 @@ tempStorage.users.set('user', {
       let user = tempStorage.users.get(username);
       
       // 如果临时存储中没有，尝试从 KV 获取
-      if (!user && env.bugdex_kv) {
+      if (!user && env.bugdexKV) {
         const userKey = `user:${username}`;
-        user = await env.bugdex_kv.get(userKey, { type: 'json' });
+        user = await env.bugdexKV.get(userKey, { type: 'json' });
       }
       
       if (user && user.password === password) {
@@ -244,9 +244,9 @@ tempStorage.users.set('user', {
       
       // 删除已使用的验证码
       tempStorage.codes.delete(email);
-      if (env.bugdex_kv) {
+      if (env.bugdexKV) {
         const codeKey = `email_code:${email}`;
-        await env.bugdex_kv.delete(codeKey);
+        await env.bugdexKV.delete(codeKey);
       }
       
       return new Response(JSON.stringify({
@@ -289,8 +289,8 @@ tempStorage.users.set('user', {
       tempStorage.codes.set(email, codeData);
       
       // 如果 KV 可用，也保存到 KV
-      if (env.bugdex_kv) {
-        await env.bugdex_kv.put(`email_code:${email}`, JSON.stringify(codeData));
+      if (env.bugdexKV) {
+        await env.bugdexKV.put(`email_code:${email}`, JSON.stringify(codeData));
       }
       
       // 发送邮件
