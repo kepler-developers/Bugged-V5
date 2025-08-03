@@ -17,8 +17,8 @@
     }
   },
   "kv": {
-    "bugdex_kv": {
-      "namespace": "bugdexKV"
+    "bugdexKV": {
+      "namespace": "ns-EzpWdvv3kzYt"
     }
   }
 } 
